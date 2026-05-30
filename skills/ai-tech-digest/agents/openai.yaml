@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Tech Digest"
+  short_description: "Turn AI articles, papers, and repos into technical briefs."
+  default_prompt: "Use $ai-tech-digest to summarize today's AI engineering news and archive the useful parts."

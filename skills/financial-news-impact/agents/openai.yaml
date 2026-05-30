@@ -1,0 +1,4 @@
+interface:
+  display_name: "Financial News Impact"
+  short_description: "Explain market impact from financial and business news."
+  default_prompt: "Use $financial-news-impact to explain how this financial news may affect markets and risk sentiment."

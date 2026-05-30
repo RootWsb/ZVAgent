@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vertical Research Orchestrator"
+  short_description: "Route research, crypto, macro, and AI tech tasks."
+  default_prompt: "Use $vertical-research-orchestrator to turn my request into the right research workflow."

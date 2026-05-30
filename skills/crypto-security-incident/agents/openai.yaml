@@ -1,0 +1,4 @@
+interface:
+  display_name: "Crypto Security Incident"
+  short_description: "Analyze crypto hacks, exploits, and protocol incidents."
+  default_prompt: "Use $crypto-security-incident to analyze this exploit and its market and protocol implications."

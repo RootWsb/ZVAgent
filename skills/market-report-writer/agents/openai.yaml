@@ -1,0 +1,4 @@
+interface:
+  display_name: "Market Report Writer"
+  short_description: "Standardize macro, crypto, and financial research reports."
+  default_prompt: "Use $market-report-writer to turn these notes into a professional market research brief."

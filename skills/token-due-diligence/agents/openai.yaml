@@ -1,0 +1,4 @@
+interface:
+  display_name: "Token Due Diligence"
+  short_description: "Research token fundamentals, tokenomics, unlocks, and risks."
+  default_prompt: "Use $token-due-diligence to review this crypto project before I decide whether it is worth deeper research."

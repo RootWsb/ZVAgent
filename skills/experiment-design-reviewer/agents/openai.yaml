@@ -1,0 +1,4 @@
+interface:
+  display_name: "Experiment Design Reviewer"
+  short_description: "Review baselines, ablations, metrics, and validity risks."
+  default_prompt: "Use $experiment-design-reviewer to audit this experiment plan before I run it."

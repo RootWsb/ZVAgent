@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Benchmark Auditor"
+  short_description: "Audit AI benchmark claims, eval design, and evidence."
+  default_prompt: "Use $ai-benchmark-auditor to check whether this model benchmark claim is trustworthy."

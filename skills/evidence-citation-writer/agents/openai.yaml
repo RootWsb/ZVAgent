@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evidence Citation Writer"
+  short_description: "Write source-grounded claims with clean citations and caveats."
+  default_prompt: "Use $evidence-citation-writer to rewrite this analysis with clearer evidence and citations."

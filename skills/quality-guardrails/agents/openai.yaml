@@ -1,0 +1,4 @@
+interface:
+  display_name: "Quality Guardrails"
+  short_description: "Validate vertical briefs and catch missing evidence."
+  default_prompt: "Use $quality-guardrails to validate this research brief before publishing."

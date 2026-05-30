@@ -1,0 +1,299 @@
+{
+  "ai-tech": [
+    {
+      "name": "OpenAI News",
+      "url": "https://openai.com/news/",
+      "type": "primary",
+      "purposes": ["models", "api", "product", "official"],
+      "notes": "Official OpenAI announcements and model/product updates."
+    },
+    {
+      "name": "OpenAI Platform Docs",
+      "url": "https://platform.openai.com/docs",
+      "type": "primary",
+      "purposes": ["api", "models", "migration", "official"],
+      "notes": "Use for API behavior, model capability, pricing/migration-sensitive claims."
+    },
+    {
+      "name": "Anthropic News",
+      "url": "https://www.anthropic.com/news",
+      "type": "primary",
+      "purposes": ["models", "product", "official"],
+      "notes": "Official Anthropic release source."
+    },
+    {
+      "name": "Google AI Blog",
+      "url": "https://ai.googleblog.com/",
+      "type": "primary",
+      "purposes": ["models", "research", "official"],
+      "notes": "Official Google AI research and product updates."
+    },
+    {
+      "name": "GitHub Trending",
+      "url": "https://github.com/trending",
+      "type": "aggregator",
+      "purposes": ["repos", "open-source", "discovery"],
+      "notes": "Use for discovery; verify project details in each repo."
+    },
+    {
+      "name": "Papers with Code",
+      "url": "https://paperswithcode.com/",
+      "type": "structured",
+      "purposes": ["papers", "benchmarks", "repos"],
+      "notes": "Useful for paper-code links and benchmark discovery."
+    },
+    {
+      "name": "arXiv cs.AI/cs.LG/cs.CL",
+      "url": "https://arxiv.org/",
+      "type": "structured",
+      "purposes": ["papers", "research"],
+      "notes": "Preprint source; check updates and versions."
+    },
+    {
+      "name": "Hugging Face Blog",
+      "url": "https://huggingface.co/blog",
+      "type": "specialist",
+      "purposes": ["models", "open-source", "engineering"],
+      "notes": "Good for open model and ecosystem technical posts."
+    },
+    {
+      "name": "机器之心",
+      "url": "https://www.jiqizhixin.com/",
+      "type": "specialist",
+      "purposes": ["news", "china", "ai-media"],
+      "notes": "Chinese AI media for discovery and context."
+    },
+    {
+      "name": "量子位",
+      "url": "https://www.qbitai.com/",
+      "type": "specialist",
+      "purposes": ["news", "china", "ai-media"],
+      "notes": "Chinese AI/technology media for discovery and summaries."
+    }
+  ],
+  "crypto": [
+    {
+      "name": "CoinGecko API",
+      "url": "https://docs.coingecko.com/reference/introduction",
+      "type": "structured",
+      "purposes": ["market-data", "prices", "coins", "global-market"],
+      "notes": "Public market data endpoints work without a key; use CRYPTO_API_KEY or COINGECKO_API_KEY when available for higher reliability."
+    },
+    {
+      "name": "CoinMarketCap",
+      "url": "https://coinmarketcap.com/",
+      "type": "structured",
+      "purposes": ["market-data", "prices", "coins"],
+      "notes": "Market data and category discovery."
+    },
+    {
+      "name": "Bitcoin.org",
+      "url": "https://bitcoin.org/",
+      "type": "primary",
+      "purposes": ["bitcoin", "official"],
+      "notes": "Reference material for Bitcoin basics; not a news source."
+    },
+    {
+      "name": "Ethereum Foundation Blog",
+      "url": "https://blog.ethereum.org/",
+      "type": "primary",
+      "purposes": ["ethereum", "protocol", "official"],
+      "notes": "Official Ethereum ecosystem/protocol updates."
+    },
+    {
+      "name": "SEC Crypto Assets and Cyber Unit",
+      "url": "https://www.sec.gov/",
+      "type": "primary",
+      "purposes": ["regulation", "etf", "enforcement"],
+      "notes": "Use for US regulatory and ETF-related primary documents."
+    },
+    {
+      "name": "CFTC",
+      "url": "https://www.cftc.gov/",
+      "type": "primary",
+      "purposes": ["regulation", "derivatives"],
+      "notes": "US derivatives and enforcement source."
+    },
+    {
+      "name": "CoinDesk",
+      "url": "https://www.coindesk.com/",
+      "type": "specialist",
+      "purposes": ["news", "market-color"],
+      "notes": "Crypto specialist reporting; verify official claims."
+    },
+    {
+      "name": "The Block",
+      "url": "https://www.theblock.co/",
+      "type": "specialist",
+      "purposes": ["news", "market-data", "research"],
+      "notes": "Crypto news and research context."
+    },
+    {
+      "name": "DefiLlama API",
+      "url": "https://defillama.com/docs/api",
+      "type": "structured",
+      "purposes": ["defi", "tvl", "stablecoins", "yields", "chains"],
+      "notes": "Free API for DeFi TVL, chain TVL, stablecoin supply, and yield-pool research."
+    }
+  ],
+  "economics": [
+    {
+      "name": "FRED",
+      "url": "https://fred.stlouisfed.org/",
+      "type": "structured",
+      "purposes": ["macro-data", "rates", "time-series"],
+      "notes": "US and global macro time series from St. Louis Fed."
+    },
+    {
+      "name": "BLS",
+      "url": "https://www.bls.gov/",
+      "type": "primary",
+      "purposes": ["macro-data", "jobs", "cpi", "inflation", "official"],
+      "notes": "US labor market and CPI primary source."
+    },
+    {
+      "name": "BEA",
+      "url": "https://www.bea.gov/",
+      "type": "primary",
+      "purposes": ["macro-data", "gdp", "income", "pce", "official"],
+      "notes": "US GDP, PCE, income, and national accounts."
+    },
+    {
+      "name": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/",
+      "type": "primary",
+      "purposes": ["macro-data", "central-bank", "rates", "fomc", "official"],
+      "notes": "FOMC statements, minutes, speeches, and policy materials."
+    },
+    {
+      "name": "US Treasury",
+      "url": "https://home.treasury.gov/",
+      "type": "primary",
+      "purposes": ["macro-data", "treasury", "fiscal", "yields"],
+      "notes": "Treasury data, fiscal materials, and yield curve references."
+    },
+    {
+      "name": "SEC EDGAR",
+      "url": "https://www.sec.gov/edgar",
+      "type": "primary",
+      "purposes": ["filings", "earnings", "public-company", "disclosures", "official"],
+      "notes": "Primary US public-company filings, including 10-K, 10-Q, 8-K, and registration statements."
+    },
+    {
+      "name": "ECB",
+      "url": "https://www.ecb.europa.eu/",
+      "type": "primary",
+      "purposes": ["macro-data", "central-bank", "eurozone", "official"],
+      "notes": "Euro area monetary policy source."
+    },
+    {
+      "name": "PBOC",
+      "url": "http://www.pbc.gov.cn/",
+      "type": "primary",
+      "purposes": ["macro-data", "central-bank", "china", "official"],
+      "notes": "China central bank policy source."
+    },
+    {
+      "name": "World Bank Data",
+      "url": "https://data.worldbank.org/",
+      "type": "structured",
+      "purposes": ["global-data", "development", "country"],
+      "notes": "Global country-level economic indicators."
+    },
+    {
+      "name": "IMF Data",
+      "url": "https://www.imf.org/en/Data",
+      "type": "structured",
+      "purposes": ["global-data", "macro", "country"],
+      "notes": "Global macro datasets and IMF reports."
+    }
+  ],
+  "research": [
+    {
+      "name": "arXiv",
+      "url": "https://arxiv.org/",
+      "type": "structured",
+      "purposes": ["papers", "preprints"],
+      "notes": "Primary source for preprints; check version history."
+    },
+    {
+      "name": "Semantic Scholar",
+      "url": "https://www.semanticscholar.org/",
+      "type": "structured",
+      "purposes": ["papers", "citations", "literature"],
+      "notes": "Useful for citation graph and related work discovery."
+    },
+    {
+      "name": "OpenReview",
+      "url": "https://openreview.net/",
+      "type": "primary",
+      "purposes": ["papers", "reviews", "conference"],
+      "notes": "Conference submissions, reviews, and discussion."
+    },
+    {
+      "name": "Google Scholar",
+      "url": "https://scholar.google.com/",
+      "type": "aggregator",
+      "purposes": ["papers", "citations", "discovery"],
+      "notes": "Discovery and citation lookup; verify details at publisher/arXiv."
+    },
+    {
+      "name": "GitHub",
+      "url": "https://github.com/",
+      "type": "primary",
+      "purposes": ["repos", "code", "reproduction"],
+      "notes": "Use repo README, releases, issues, and commits for code evidence."
+    },
+    {
+      "name": "Papers with Code",
+      "url": "https://paperswithcode.com/",
+      "type": "structured",
+      "purposes": ["papers", "repos", "benchmarks"],
+      "notes": "Paper-code links and benchmark discovery."
+    },
+    {
+      "name": "ACL Anthology",
+      "url": "https://aclanthology.org/",
+      "type": "primary",
+      "purposes": ["papers", "nlp", "publisher"],
+      "notes": "Primary source for ACL-family NLP papers."
+    },
+    {
+      "name": "IEEE Xplore",
+      "url": "https://ieeexplore.ieee.org/",
+      "type": "primary",
+      "purposes": ["papers", "engineering", "publisher"],
+      "notes": "Publisher source; may require access."
+    }
+  ],
+  "cross-domain": [
+    {
+      "name": "Reuters",
+      "url": "https://www.reuters.com/",
+      "type": "specialist",
+      "purposes": ["news", "markets", "policy"],
+      "notes": "High-quality general news for macro, policy, business, and markets."
+    },
+    {
+      "name": "Bloomberg",
+      "url": "https://www.bloomberg.com/",
+      "type": "specialist",
+      "purposes": ["news", "markets", "macro"],
+      "notes": "Market and macro reporting; may be paywalled."
+    },
+    {
+      "name": "Financial Times",
+      "url": "https://www.ft.com/",
+      "type": "specialist",
+      "purposes": ["news", "macro", "business"],
+      "notes": "Global business and markets context; may be paywalled."
+    },
+    {
+      "name": "GitHub",
+      "url": "https://github.com/",
+      "type": "primary",
+      "purposes": ["repos", "open-source", "ai-tech"],
+      "notes": "Primary source for open-source project state."
+    }
+  ]
+}

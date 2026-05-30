@@ -1,0 +1,243 @@
+# Skill Summary Architecture
+
+This document defines a safe progressive-loading design for large skill libraries.
+
+## Goal
+
+Reduce runtime prompt cost and skill-routing latency without letting AI-written summaries silently replace `SKILL.md`.
+
+The guiding rule is:
+
+- `Level 1` routes.
+- `Level 2` triages.
+- `Level 3` executes.
+
+`Level 2` is never the final authority for tool calls, scripts, parameters, or safety-critical steps.
+
+## Progressive Loading
+
+### Level 1
+
+Inject into the system prompt for many skills:
+
+- skill name
+- one-sentence description
+- optional tags
+
+Use Level 1 for coarse candidate selection only.
+
+### Level 2
+
+Load only for the top skill candidates selected from Level 1.
+
+Level 2 is a structured skill card with:
+
+- `one_line`
+- `use_when`
+- `avoid_when`
+- `prerequisites`
+- `key_inputs`
+- `workflow_outline`
+- `tool_dependencies`
+- `risk_flags`
+
+Use Level 2 to decide whether the agent should open the full `SKILL.md`.
+
+### Level 3
+
+The full `SKILL.md`, plus any referenced scripts or `references/` documents.
+
+Use Level 3 before:
+
+- running scripts
+- using unusual parameters
+- performing paid or destructive actions
+- following multi-step workflows
+- relying on subtle caveats or exceptions
+
+## Artifact Format
+
+Each skill may have a sidecar file named `SKILL.summary.json`.
+
+It should be generated offline and invalidated when the source `SKILL.md` changes.
+
+### Required top-level fields
+
+- `schema_version`
+- `skill_name`
+- `source_path`
+- `source_hash`
+- `generated_at`
+- `generator`
+- `level_1`
+- `level_2`
+- `evidence`
+
+### Example
+
+```json
+{
+  "schema_version": "1.0",
+  "skill_name": "ai-tech-digest",
+  "source_path": "skills/ai-tech-digest/SKILL.md",
+  "source_hash": "sha256-of-skill-content",
+  "generated_at": "2026-05-21T10:00:00Z",
+  "generator": {
+    "provider": "openai",
+    "model": "gpt-5.2",
+    "prompt_version": "skill-summary-v1"
+  },
+  "level_1": {
+    "name": "ai-tech-digest",
+    "description": "Summarize AI news, papers, repos, and model updates.",
+    "tags": ["ai", "papers", "repos", "digest"]
+  },
+  "level_2": {
+    "one_line": "Turn AI news and papers into concise technical briefs.",
+    "use_when": [
+      "The user asks for an AI news or paper digest.",
+      "The task is to compare model or repo updates."
+    ],
+    "avoid_when": [
+      "The task is mainly about crypto, macro, or non-AI domains."
+    ],
+    "prerequisites": [
+      "Use web/search tools to verify current claims."
+    ],
+    "key_inputs": [
+      "topic or source link",
+      "time range",
+      "desired output format"
+    ],
+    "workflow_outline": [
+      "classify task shape",
+      "verify sources",
+      "extract technical thesis",
+      "produce brief and watchlist"
+    ],
+    "tool_dependencies": [
+      "web_search",
+      "web_fetch",
+      "read"
+    ],
+    "risk_flags": [
+      "Do not label something SOTA without source support."
+    ]
+  },
+  "evidence": {
+    "use_when": [
+      "Use when the user asks to summarize AI news",
+      "compare model or framework updates"
+    ],
+    "prerequisites": [
+      "Verify latest model releases, benchmarks, repositories, APIs, and product claims"
+    ],
+    "risk_flags": [
+      "Avoid calling something SOTA unless the source clearly supports it"
+    ]
+  }
+}
+```
+
+## Why Evidence Is Mandatory
+
+The main failure mode of AI summaries is not bad wording, but invented constraints or missing caveats.
+
+To reduce this risk, each non-trivial Level 2 field should carry source-grounding evidence:
+
+- evidence snippets must be copied or tightly extracted from `SKILL.md`
+- evidence is used for validation, not shown to the end user by default
+- if a field has no evidence, the runtime should treat it as lower confidence
+
+## Generation Pipeline
+
+### Step 1: Read and hash source
+
+- read `SKILL.md`
+- compute `source_hash`
+- skip regeneration if the hash matches an existing valid summary
+
+### Step 2: Call external model offline
+
+Use a strict structured-output prompt.
+
+The model should be told:
+
+- do not invent tools, parameters, or prerequisites
+- only summarize what is explicitly supported by `SKILL.md`
+- keep each field compact
+- include evidence snippets for every populated Level 2 field
+
+### Step 3: Run deterministic validation
+
+Validation should reject or warn on:
+
+- schema mismatch
+- missing required fields
+- summary/hash mismatch
+- empty or oversized sections
+- evidence fields missing for populated Level 2 sections
+- evidence snippets that cannot be found in normalized `SKILL.md`
+
+### Step 4: Human or fallback handling
+
+If validation fails:
+
+- discard the artifact
+- keep routing from raw Level 1 data
+- fall back to full `SKILL.md` loading for candidate skills
+
+Do not silently accept ungrounded Level 2 summaries.
+
+## Runtime Policy
+
+At runtime, the agent should follow this path:
+
+1. Load many Level 1 cards.
+2. Select top candidate skills.
+3. Load Level 2 summaries only for those candidates.
+4. If the selected skill will actually be used, read full `SKILL.md`.
+
+Suggested hard rule:
+
+- Level 2 may choose whether to read Level 3.
+- Level 2 may not replace Level 3 for execution-sensitive decisions.
+
+## Integration Notes for ZVAgent
+
+ZVAgent implements Hermes-style progressive disclosure as:
+
+- Level 1: `<available_skills>` contains the lightweight catalog for enabled skills.
+- Level 2: `<candidate_skill_summaries>` contains validated `SKILL.summary.json` cards for routed top candidates.
+- Level 3: the agent must use the `read` tool on the selected skill's `SKILL.md` before executing the skill workflow.
+
+Runtime knobs:
+
+- `skill_progressive_loading_enabled`: enable full Level 1 catalog + candidate Level 2 summaries.
+- `skill_level1_max_skills`: cap the Level 1 catalog; `0` means include all enabled skills.
+- `skill_summary_enabled`: enable loading validated Level 2 summary cards.
+- `skill_summary_max_candidates`: cap the number of Level 2 cards added per run.
+
+Offline generation:
+
+```bash
+python -m cli.cli skill summarize <skill-name> --dry-run
+python -m cli.cli skill summarize <skill-name>
+python -m cli.cli skill summarize --all --custom
+```
+
+The generator reuses the configured runtime model provider and validates each artifact before writing it.
+
+## Recommended Initial Scope
+
+Start with:
+
+- summary schema and validator
+- offline generation command
+- runtime read support for `SKILL.summary.json`
+
+Delay until later:
+
+- embedding retrieval
+- cross-skill graph reasoning
+- auto-regeneration during live chat

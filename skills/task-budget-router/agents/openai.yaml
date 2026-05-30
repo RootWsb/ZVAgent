@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Budget Router"
+  short_description: "Route tasks and set retrieval/output budgets."
+  default_prompt: "Use $task-budget-router to choose the right mode, skills, and token budget for this request."

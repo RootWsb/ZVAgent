@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brief Automation"
+  short_description: "Schedule, draft, and archive vertical research briefs."
+  default_prompt: "Use $brief-automation to set up a recurring AI, crypto, macro, or research brief."

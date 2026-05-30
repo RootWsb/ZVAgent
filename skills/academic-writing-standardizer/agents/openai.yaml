@@ -1,0 +1,4 @@
+interface:
+  display_name: "Academic Writing Standardizer"
+  short_description: "Polish academic structure, tone, abstracts, and arguments."
+  default_prompt: "Use $academic-writing-standardizer to polish this research draft into a clearer academic style."

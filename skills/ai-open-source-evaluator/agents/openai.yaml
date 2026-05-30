@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Open Source Evaluator"
+  short_description: "Assess AI repos for maturity and adoption risk."
+  default_prompt: "Use $ai-open-source-evaluator to evaluate whether this AI repository is worth using or reproducing."

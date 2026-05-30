@@ -1,0 +1,4 @@
+interface:
+  display_name: "Usage Learning Optimizer"
+  short_description: "Maintain preferences, task patterns, and token budgets."
+  default_prompt: "Use $usage-learning-optimizer to remember my feedback and make future answers shorter and smarter."

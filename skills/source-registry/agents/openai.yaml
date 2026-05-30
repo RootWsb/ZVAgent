@@ -1,0 +1,4 @@
+interface:
+  display_name: "Source Registry"
+  short_description: "Choose trusted data sources for vertical research."
+  default_prompt: "Use $source-registry to pick reliable sources for this research task."

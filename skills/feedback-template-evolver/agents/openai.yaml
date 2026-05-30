@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feedback Template Evolver"
+  short_description: "Turn feedback into reviewable preference and template updates."
+  default_prompt: "Use $feedback-template-evolver to turn my feedback into a reusable template or preference."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Knowledge Compression"
+  short_description: "Scan, map, and compact the knowledge base."
+  default_prompt: "Use $knowledge-compression-indexer to optimize my knowledge base and reduce token usage."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Knowledge Note Standardizer"
+  short_description: "Normalize durable notes, summaries, tags, and cross-links."
+  default_prompt: "Use $knowledge-note-standardizer to turn this material into a clean knowledge-base note."

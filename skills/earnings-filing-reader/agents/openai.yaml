@@ -1,0 +1,4 @@
+interface:
+  display_name: "Earnings Filing Reader"
+  short_description: "Read earnings, filings, guidance, and company disclosures."
+  default_prompt: "Use $earnings-filing-reader to summarize this earnings release or filing and flag the important changes."

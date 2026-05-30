@@ -1,0 +1,4 @@
+interface:
+  display_name: "Economic Analysis"
+  short_description: "Analyze macro data, policy, markets, and economic cycles."
+  default_prompt: "Use $economic-analysis to explain the latest CPI report and its market implications."

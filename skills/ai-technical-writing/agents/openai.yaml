@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Technical Writing"
+  short_description: "Write AI technical explainers, model notes, and repo summaries."
+  default_prompt: "Use $ai-technical-writing to turn this AI topic into a clear technical explainer."

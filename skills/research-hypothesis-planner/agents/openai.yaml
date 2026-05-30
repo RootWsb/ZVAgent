@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Hypothesis Planner"
+  short_description: "Turn ideas into research questions, hypotheses, and study plans."
+  default_prompt: "Use $research-hypothesis-planner to turn this rough research idea into testable hypotheses and a study plan."
