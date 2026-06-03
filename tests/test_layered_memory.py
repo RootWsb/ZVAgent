@@ -112,8 +112,12 @@ def test_layered_memory_searches_episodic_and_profile(tmp_path):
     assert result["profile"][0]["_section"] == "preferences"
 
 
-def test_layered_memory_enqueues_compaction_job_when_threshold_exceeded(tmp_path):
-    config = MemoryConfig(workspace_root=str(tmp_path), episodic_max_items=1)
+def test_layered_memory_runs_compaction_job_when_threshold_exceeded(tmp_path):
+    config = MemoryConfig(
+        workspace_root=str(tmp_path),
+        episodic_max_items=1,
+        episodic_keep_recent_items=1,
+    )
     service = LayeredMemoryService(config)
 
     records = service.append_episodic_from_summary(
@@ -126,7 +130,45 @@ def test_layered_memory_enqueues_compaction_job_when_threshold_exceeded(tmp_path
     assert queue.exists()
     payload = json.loads(queue.read_text(encoding="utf-8").strip())
     assert payload["layer"] == "episodic"
-    assert payload["status"] == "pending"
+    assert payload["status"] == "done"
+    assert payload["result"]["status"] == "compacted"
+
+
+def test_process_compaction_queue_compacts_old_episodic_records(tmp_path):
+    config = MemoryConfig(
+        workspace_root=str(tmp_path),
+        episodic_max_items=10,
+        episodic_keep_recent_items=1,
+    )
+    service = LayeredMemoryService(config)
+
+    service.append_episodic_from_summary(
+        "- first architecture decision\n- second profile preference\n- third recent event",
+        reason="trim",
+    )
+    service.enqueue_compaction_job(layer="episodic", reason="test")
+
+    result = service.process_compaction_queue(force=True)
+
+    assert result["processed"] == 1
+    assert result["compacted"] == 1
+
+    active = service.episodic.list_all()
+    assert len(active) == 1
+    assert active[0].summary == "third recent event"
+
+    compacted_dir = tmp_path / "memory" / "episodic" / "compacted"
+    md_files = list(compacted_dir.glob("*.md"))
+    raw_files = list(compacted_dir.glob("*.jsonl"))
+    assert len(md_files) == 1
+    assert len(raw_files) == 1
+    assert "first architecture decision" in md_files[0].read_text(encoding="utf-8")
+    assert "third recent event" not in md_files[0].read_text(encoding="utf-8")
+
+    queue = tmp_path / "memory" / "jobs" / "compaction_queue.jsonl"
+    job = json.loads(queue.read_text(encoding="utf-8").strip())
+    assert job["status"] == "done"
+    assert job["result"]["status"] == "compacted"
 
 
 class _DummyTool:

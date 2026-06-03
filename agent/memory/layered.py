@@ -148,6 +148,10 @@ class EpisodicMemoryStore:
                 if limit is not None and count >= limit:
                     return
 
+    def list_all(self) -> List[EpisodicMemoryRecord]:
+        """Return all active episodic records, newest first."""
+        return list(self.iter_records())
+
     def list_recent(self, limit: int = 20) -> List[EpisodicMemoryRecord]:
         return list(self.iter_records(limit=max(0, limit)))
 
@@ -195,6 +199,115 @@ class EpisodicMemoryStore:
             len(records) > self.config.episodic_max_items
             or token_count > self.config.episodic_max_tokens
         )
+
+    def compact(self, *, force: bool = False) -> Dict[str, Any]:
+        """Compact older episodic records into markdown + raw JSONL snapshots.
+
+        The newest ``episodic_keep_recent_items`` records remain active in JSONL.
+        Older records are preserved under ``memory/episodic/compacted/`` and
+        removed from active JSONL so search/statistics stay bounded.
+        """
+        records = self.list_all()
+        token_count = sum(_estimate_tokens(r.summary) for r in records)
+        if not records:
+            return {"status": "skipped", "reason": "empty", "compacted": 0, "kept": 0}
+
+        should_compact = self.should_compact(records=records, token_count=token_count)
+        if not force and not should_compact:
+            return {
+                "status": "skipped",
+                "reason": "below_threshold",
+                "compacted": 0,
+                "kept": len(records),
+            }
+
+        keep_count = max(0, self.config.episodic_keep_recent_items)
+        kept = records[:keep_count]
+        old = records[keep_count:]
+        if not old:
+            return {
+                "status": "skipped",
+                "reason": "nothing_old_enough",
+                "compacted": 0,
+                "kept": len(kept),
+            }
+
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        compacted_dir = self.root / "compacted"
+        compacted_dir.mkdir(parents=True, exist_ok=True)
+        md_path = compacted_dir / f"{stamp}.md"
+        raw_path = compacted_dir / f"{stamp}.jsonl"
+
+        md_path.write_text(self._build_compacted_markdown(old, stamp), encoding="utf-8")
+        with raw_path.open("w", encoding="utf-8") as f:
+            for record in reversed(old):
+                f.write(json.dumps(record.to_dict(), ensure_ascii=False) + "\n")
+
+        self._rewrite_active_records(kept)
+
+        return {
+            "status": "compacted",
+            "compacted": len(old),
+            "kept": len(kept),
+            "markdown_path": str(md_path),
+            "raw_path": str(raw_path),
+            "estimated_tokens_before": token_count,
+            "estimated_tokens_after": sum(_estimate_tokens(r.summary) for r in kept),
+        }
+
+    def _rewrite_active_records(self, records_newest_first: List[EpisodicMemoryRecord]):
+        """Rewrite active root JSONL files with the provided records only."""
+        for file_path in self.root.glob("*.jsonl"):
+            file_path.unlink(missing_ok=True)
+
+        by_day: Dict[str, List[EpisodicMemoryRecord]] = {}
+        for record in reversed(records_newest_first):
+            day = (record.created_at or _utc_now_iso())[:10]
+            if not re.match(r"\d{4}-\d{2}-\d{2}", day):
+                day = datetime.now().strftime("%Y-%m-%d")
+            by_day.setdefault(day, []).append(record)
+
+        for day, records in by_day.items():
+            path = self.root / f"{day}.jsonl"
+            with path.open("w", encoding="utf-8") as f:
+                for record in records:
+                    f.write(json.dumps(record.to_dict(), ensure_ascii=False) + "\n")
+
+    @staticmethod
+    def _build_compacted_markdown(records_newest_first: List[EpisodicMemoryRecord], stamp: str) -> str:
+        records = list(reversed(records_newest_first))
+        lines = [
+            f"# Episodic Memory Compaction: {stamp}",
+            "",
+            f"- Compacted records: {len(records)}",
+            f"- Created at: {_utc_now_iso()}",
+            "",
+            "## Summary",
+            "",
+        ]
+
+        for record in records:
+            targets = ", ".join(record.candidate_targets) or "none"
+            lines.append(
+                f"- {record.summary} "
+                f"(id={record.id}, importance={record.importance:.2f}, stability={record.stability:.2f}, targets={targets})"
+            )
+
+        profile_candidates = [r for r in records if "profile" in r.candidate_targets]
+        long_term_candidates = [r for r in records if "long_term" in r.candidate_targets]
+
+        if profile_candidates:
+            lines.extend(["", "## Profile Candidates", ""])
+            for record in profile_candidates:
+                lines.append(f"- {record.summary} (evidence={record.id})")
+
+        if long_term_candidates:
+            lines.extend(["", "## Long-Term Candidates", ""])
+            for record in long_term_candidates:
+                lines.append(f"- {record.summary} (evidence={record.id})")
+
+        lines.append("")
+        return "\n".join(lines)
 
 
 def _empty_profile() -> Dict[str, Any]:
@@ -406,6 +519,7 @@ class LayeredMemoryService:
                     "new_records": len(records),
                 },
             )
+            self.process_compaction_queue()
         return records
 
     def search(self, query: str, layers: Optional[List[str]] = None, limit: int = 5) -> Dict[str, Any]:
@@ -435,6 +549,65 @@ class LayeredMemoryService:
         with self.compaction_queue_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(job, ensure_ascii=False) + "\n")
         return job
+
+    def process_compaction_queue(self, *, force: bool = False) -> Dict[str, Any]:
+        """Process pending compaction jobs.
+
+        First implementation supports episodic compaction. Unknown layers are
+        marked failed so the queue never loops forever on an unsupported job.
+        """
+        jobs = self._load_compaction_jobs()
+        if not jobs:
+            return {"processed": 0, "compacted": 0, "jobs": []}
+
+        processed = 0
+        compacted = 0
+        results = []
+        for job in jobs:
+            if job.get("status") != "pending":
+                continue
+            processed += 1
+            try:
+                if job.get("layer") == "episodic":
+                    result = self.episodic.compact(force=force)
+                else:
+                    result = {
+                        "status": "failed",
+                        "reason": f"unsupported layer: {job.get('layer')}",
+                    }
+                job["status"] = "done" if result.get("status") in {"compacted", "skipped"} else "failed"
+                job["processed_at"] = _utc_now_iso()
+                job["result"] = result
+                if result.get("status") == "compacted":
+                    compacted += 1
+                results.append({"job_id": job.get("id"), **result})
+            except Exception as e:
+                job["status"] = "failed"
+                job["processed_at"] = _utc_now_iso()
+                job["error"] = str(e)
+                results.append({"job_id": job.get("id"), "status": "failed", "error": str(e)})
+
+        self._write_compaction_jobs(jobs)
+        return {"processed": processed, "compacted": compacted, "jobs": results}
+
+    def _load_compaction_jobs(self) -> List[Dict[str, Any]]:
+        if not self.compaction_queue_path.exists():
+            return []
+        jobs = []
+        for line in self.compaction_queue_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                jobs.append(json.loads(line))
+            except Exception:
+                continue
+        return jobs
+
+    def _write_compaction_jobs(self, jobs: List[Dict[str, Any]]):
+        with self.compaction_queue_path.open("w", encoding="utf-8") as f:
+            for job in jobs:
+                f.write(json.dumps(job, ensure_ascii=False) + "\n")
 
     @staticmethod
     def _guess_candidate_targets(text: str) -> List[str]:
