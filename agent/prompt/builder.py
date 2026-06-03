@@ -304,6 +304,13 @@ def _build_memory_section(memory_manager: Any, tools: Optional[List[Any]], langu
 
     from datetime import datetime
     today_file = datetime.now().strftime("%Y-%m-%d") + ".md"
+    profile_summary = ""
+    layered_memory = getattr(memory_manager, "layered_memory", None)
+    if layered_memory:
+        try:
+            profile_summary = layered_memory.profile.read_summary()
+        except Exception:
+            profile_summary = ""
 
     lines = [
         "## 🧠 记忆系统",
@@ -321,7 +328,15 @@ def _build_memory_section(memory_manager: Any, tools: Optional[List[Any]], langu
         "**记忆文件结构**:",
         "- `MEMORY.md`: 长期记忆索引（已自动加载到上下文，核心信息、偏好、决策等）",
         f"- `memory/YYYY-MM-DD.md`: 每日记忆，今天是 `memory/{today_file}`",
+        "- `memory/episodic/*.jsonl`: 中期事件记忆，用于回忆最近发生过什么",
+        "- `memory/profile/user_profile.json`: 用户画像，记录稳定偏好、目标、约束和沟通风格",
         "- `knowledge/`: 结构化知识库（见下方知识系统）",
+        "",
+        "### 分层检索路由",
+        "",
+        "- 最近、上次、刚才、之前发生的事件 → `memory_search` 搜索 `episodic`",
+        "- 用户偏好、目标、习惯、约束、身份信息 → `memory_search` 搜索 `profile`",
+        "- 项目决策、长期事实、可复用经验 → `memory_search` 搜索 `classic` / `MEMORY.md`",
         "",
         "### 写入记忆",
         "",
@@ -343,6 +358,14 @@ def _build_memory_section(memory_manager: Any, tools: Optional[List[Any]], langu
         "**使用原则**: 自然使用记忆，就像你本来就知道；不用刻意提起，除非用户问起。",
         "",
     ]
+
+    if profile_summary:
+        lines[2:2] = [
+            "### User Profile Summary",
+            "",
+            profile_summary,
+            "",
+        ]
 
     return lines
 
