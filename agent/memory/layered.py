@@ -151,6 +151,27 @@ class EpisodicMemoryStore:
     def list_recent(self, limit: int = 20) -> List[EpisodicMemoryRecord]:
         return list(self.iter_records(limit=max(0, limit)))
 
+    def search(self, query: str, limit: int = 5) -> List[EpisodicMemoryRecord]:
+        """Simple lexical search over recent episodic memories."""
+        query = (query or "").strip().lower()
+        if not query:
+            return []
+
+        tokens = set(re.findall(r"[\u4e00-\u9fff]{2,}|[A-Za-z0-9_]+", query))
+        results = []
+        for record in self.iter_records():
+            haystack = " ".join([
+                record.summary,
+                " ".join(record.entities),
+                " ".join(record.candidate_targets),
+                record.type,
+            ]).lower()
+            if any(token.lower() in haystack for token in tokens):
+                results.append(record)
+            if len(results) >= limit:
+                break
+        return results
+
     def stats(self) -> Dict[str, Any]:
         records = list(self.iter_records())
         token_count = sum(_estimate_tokens(r.summary) for r in records)
@@ -287,6 +308,28 @@ class ProfileMemoryStore:
     def read_summary(self) -> str:
         return self.summary_path.read_text(encoding="utf-8").strip()
 
+    def search(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Search structured profile entries by simple lexical matching."""
+        query = (query or "").strip().lower()
+        if not query:
+            return []
+
+        tokens = set(re.findall(r"[\u4e00-\u9fff]{2,}|[A-Za-z0-9_]+", query))
+        profile = self.load()
+        matches: List[Dict[str, Any]] = []
+        for section in ("preferences", "goals", "constraints", "relationships"):
+            for item in profile.get(section, []):
+                if not isinstance(item, dict):
+                    continue
+                text = json.dumps(item, ensure_ascii=False).lower()
+                if any(token.lower() in text for token in tokens):
+                    result = dict(item)
+                    result["_section"] = section
+                    matches.append(result)
+                if len(matches) >= limit:
+                    return matches
+        return matches
+
 
 class LayeredMemoryService:
     """Facade for the first layered-memory MVP."""
@@ -295,6 +338,8 @@ class LayeredMemoryService:
         self.config = config or get_default_memory_config()
         self.episodic = EpisodicMemoryStore(self.config)
         self.profile = ProfileMemoryStore(self.config)
+        self.jobs_dir = self.config.get_memory_jobs_dir()
+        self.compaction_queue_path = self.jobs_dir / "compaction_queue.jsonl"
 
     def get_status(self) -> Dict[str, Any]:
         return {
@@ -315,6 +360,97 @@ class LayeredMemoryService:
                 "long_term_max_tokens": self.config.long_term_max_tokens,
             },
         }
+
+    def append_episodic_from_summary(
+        self,
+        summary: str,
+        *,
+        session_id: Optional[str] = None,
+        source: str = "memory_flush",
+        reason: str = "trim",
+        importance: float = 0.6,
+        stability: float = 0.5,
+    ) -> List[EpisodicMemoryRecord]:
+        """Append event-level memories from a flush summary.
+
+        Each bullet line becomes one episodic record. This keeps L2 structured
+        while preserving the existing daily Markdown memory behavior.
+        """
+        records = []
+        for line in (summary or "").splitlines():
+            text = line.strip()
+            if not text:
+                continue
+            text = re.sub(r"^[-*]\s+", "", text).strip()
+            if not text or text.startswith("#"):
+                continue
+            records.append(
+                self.episodic.append(
+                    text,
+                    session_id=session_id,
+                    source=source,
+                    memory_type=reason,
+                    importance=importance,
+                    stability=stability,
+                    candidate_targets=self._guess_candidate_targets(text),
+                    metadata={"flush_reason": reason},
+                )
+            )
+        if records and self.episodic.stats()["should_compact"]:
+            self.enqueue_compaction_job(
+                layer="episodic",
+                reason="threshold",
+                metadata={
+                    "source": source,
+                    "flush_reason": reason,
+                    "new_records": len(records),
+                },
+            )
+        return records
+
+    def search(self, query: str, layers: Optional[List[str]] = None, limit: int = 5) -> Dict[str, Any]:
+        layers = layers or ["episodic", "profile"]
+        result: Dict[str, Any] = {}
+        if "episodic" in layers:
+            result["episodic"] = self.episodic.search(query, limit=limit)
+        if "profile" in layers:
+            result["profile"] = self.profile.search(query, limit=limit)
+        return result
+
+    def enqueue_compaction_job(
+        self,
+        *,
+        layer: str,
+        reason: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        job = {
+            "id": f"compact_{layer}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}",
+            "created_at": _utc_now_iso(),
+            "layer": layer,
+            "reason": reason,
+            "status": "pending",
+            "metadata": metadata or {},
+        }
+        with self.compaction_queue_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(job, ensure_ascii=False) + "\n")
+        return job
+
+    @staticmethod
+    def _guess_candidate_targets(text: str) -> List[str]:
+        targets = []
+        profile_markers = (
+            "喜欢", "不喜欢", "偏好", "倾向", "希望", "目标", "计划",
+            "以后", "用户认为", "用户希望", "用户计划",
+        )
+        long_term_markers = (
+            "决定", "方案", "架构", "实现", "系统", "训练", "规则", "流程",
+        )
+        if any(marker in text for marker in profile_markers):
+            targets.append("profile")
+        if any(marker in text for marker in long_term_markers):
+            targets.append("long_term")
+        return targets
 
 
 __all__ = [

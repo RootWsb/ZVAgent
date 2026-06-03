@@ -248,6 +248,19 @@ class MemoryFlushManager:
 
             logger.info(f"[MemoryFlush] Wrote daily memory to {daily_file.name} (reason={reason}, chars={len(daily_part)})")
 
+            # --- Write structured episodic memory (best effort) ---
+            layered_memory = getattr(self, "layered_memory", None)
+            if layered_memory:
+                try:
+                    layered_memory.append_episodic_from_summary(
+                        daily_part,
+                        session_id=user_id,
+                        source="memory_flush",
+                        reason=reason,
+                    )
+                except Exception as e:
+                    logger.warning(f"[MemoryFlush] Episodic memory write failed: {e}")
+
             # --- Inject context summary into live messages (if callback provided) ---
             if context_summary_callback:
                 try:

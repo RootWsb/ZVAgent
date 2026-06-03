@@ -6,6 +6,7 @@ from agent.memory.layered import (
     LayeredMemoryService,
     ProfileMemoryStore,
 )
+from agent.prompt.builder import _build_memory_section
 
 
 def test_episodic_memory_appends_jsonl_and_reports_stats(tmp_path):
@@ -82,10 +83,75 @@ def test_profile_memory_generates_summary_and_history(tmp_path):
 def test_layered_memory_service_status_includes_thresholds(tmp_path):
     config = MemoryConfig(workspace_root=str(tmp_path), episodic_max_items=3)
     service = LayeredMemoryService(config)
-    service.episodic.append("用户正在设计可训练的分层记忆系统。")
+    service.episodic.append("用户正在设计包含用户画像层的可训练分层记忆系统。")
 
     status = service.get_status()
 
     assert status["episodic"]["items"] == 1
     assert status["profile"]["summary_tokens"] == 0
     assert status["thresholds"]["episodic_max_items"] == 3
+
+
+def test_layered_memory_searches_episodic_and_profile(tmp_path):
+    config = MemoryConfig(workspace_root=str(tmp_path))
+    service = LayeredMemoryService(config)
+    service.episodic.append("用户正在设计包含用户画像层的可训练分层记忆系统。")
+
+    profile = service.profile.load()
+    profile["preferences"].append({
+        "key": "memory_architecture",
+        "value": "偏好显式用户画像层",
+        "confidence": 0.9,
+        "status": "active",
+    })
+    service.profile.save(profile, reason="test")
+
+    result = service.search("用户画像", layers=["episodic", "profile"], limit=5)
+
+    assert result["episodic"]
+    assert result["profile"][0]["_section"] == "preferences"
+
+
+def test_layered_memory_enqueues_compaction_job_when_threshold_exceeded(tmp_path):
+    config = MemoryConfig(workspace_root=str(tmp_path), episodic_max_items=1)
+    service = LayeredMemoryService(config)
+
+    records = service.append_episodic_from_summary(
+        "- 用户正在设计分层记忆系统。\n- 用户希望自动压缩中期记忆。",
+        reason="trim",
+    )
+
+    assert len(records) == 2
+    queue = tmp_path / "memory" / "jobs" / "compaction_queue.jsonl"
+    assert queue.exists()
+    payload = json.loads(queue.read_text(encoding="utf-8").strip())
+    assert payload["layer"] == "episodic"
+    assert payload["status"] == "pending"
+
+
+class _DummyTool:
+    name = "memory_search"
+
+
+class _DummyMemoryManager:
+    def __init__(self, layered_memory):
+        self.layered_memory = layered_memory
+
+
+def test_memory_prompt_injects_profile_summary(tmp_path):
+    config = MemoryConfig(workspace_root=str(tmp_path))
+    service = LayeredMemoryService(config)
+    profile = service.profile.load()
+    profile["goals"].append({
+        "value": "训练中期和长期记忆层",
+        "confidence": 0.9,
+        "status": "active",
+    })
+    service.profile.save(profile, reason="test")
+
+    lines = _build_memory_section(_DummyMemoryManager(service), [_DummyTool()], "zh")
+    prompt = "\n".join(lines)
+
+    assert "User Profile Summary" in prompt
+    assert "训练中期和长期记忆层" in prompt
+    assert "memory/episodic/*.jsonl" in prompt

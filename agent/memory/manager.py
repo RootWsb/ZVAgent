@@ -106,6 +106,7 @@ class MemoryManager:
         # existing MEMORY.md and daily-memory behavior remains unchanged until
         # callers opt into episodic/profile operations.
         self.layered_memory = LayeredMemoryService(self.config)
+        self.flush_manager.layered_memory = self.layered_memory
         
         # Initialize knowledge graph (optional)
         self.knowledge_graph = None
