@@ -10,6 +10,12 @@ from agent.memory.config import MemoryConfig, get_default_memory_config, set_glo
 from agent.memory.embedding import create_embedding_provider
 from agent.memory.conversation_store import ConversationStore, get_conversation_store
 from agent.memory.summarizer import ensure_daily_memory_file
+from agent.memory.layered import (
+    EpisodicMemoryRecord,
+    EpisodicMemoryStore,
+    ProfileMemoryStore,
+    LayeredMemoryService,
+)
 
 __all__ = [
     'MemoryManager',
@@ -20,4 +26,8 @@ __all__ = [
     'ConversationStore',
     'get_conversation_store',
     'ensure_daily_memory_file',
+    'EpisodicMemoryRecord',
+    'EpisodicMemoryStore',
+    'ProfileMemoryStore',
+    'LayeredMemoryService',
 ]

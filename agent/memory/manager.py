@@ -15,6 +15,7 @@ from agent.memory.storage import MemoryStorage, MemoryChunk, SearchResult
 from agent.memory.chunker import TextChunker
 from agent.memory.embedding import create_embedding_provider, EmbeddingProvider
 from agent.memory.summarizer import MemoryFlushManager, create_memory_files_if_needed
+from agent.memory.layered import LayeredMemoryService
 
 
 class MemoryManager:
@@ -100,6 +101,11 @@ class MemoryManager:
             workspace_dir=workspace_dir,
             llm_model=llm_model
         )
+
+        # Initialize layered memory primitives. This is intentionally passive:
+        # existing MEMORY.md and daily-memory behavior remains unchanged until
+        # callers opt into episodic/profile operations.
+        self.layered_memory = LayeredMemoryService(self.config)
         
         # Initialize knowledge graph (optional)
         self.knowledge_graph = None
@@ -471,6 +477,7 @@ class MemoryManager:
             'embedding_model': self.config.embedding_model if self.embedding_provider else 'N/A',
             'search_mode': 'hybrid (vector + keyword)' if self.embedding_provider else 'keyword only (FTS5)',
             'knowledge_graph': graph_stats,
+            'layered_memory': self.layered_memory.get_status(),
         }
 
     def mark_dirty(self):

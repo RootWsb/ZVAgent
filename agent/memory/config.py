@@ -52,6 +52,22 @@ class MemoryConfig:
     graph_enabled: bool = True
     graph_max_depth: int = 2
 
+    # Layered memory compaction config
+    episodic_max_items: int = 30
+    episodic_max_tokens: int = 3000
+    episodic_keep_recent_items: int = 8
+    episodic_compact_target_tokens: int = 1000
+    episodic_compact_interval_hours: int = 24
+
+    profile_candidate_batch_size: int = 20
+    profile_min_confidence_to_write: float = 0.7
+    profile_conflict_check: bool = True
+
+    long_term_max_items: int = 80
+    long_term_max_tokens: int = 8000
+    long_term_compact_target_items: int = 40
+    long_term_compact_interval_days: int = 3
+
     def get_graph_db_path(self) -> Path:
         """Get SQLite database path for knowledge graph"""
         long_term_dir = self.get_memory_dir() / "long-term"
@@ -71,6 +87,30 @@ class MemoryConfig:
         index_dir = self.get_memory_dir() / "long-term"
         index_dir.mkdir(parents=True, exist_ok=True)
         return index_dir / "index.db"
+
+    def get_episodic_dir(self) -> Path:
+        """Get episodic mid-term memory directory"""
+        path = self.get_memory_dir() / "episodic"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def get_profile_dir(self) -> Path:
+        """Get structured user profile memory directory"""
+        path = self.get_memory_dir() / "profile"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def get_long_term_dir(self) -> Path:
+        """Get layered long-term memory directory"""
+        path = self.get_memory_dir() / "long_term"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def get_memory_jobs_dir(self) -> Path:
+        """Get layered memory background jobs directory"""
+        path = self.get_memory_dir() / "jobs"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
     
     def get_skills_dir(self) -> Path:
         """Get skills directory"""
